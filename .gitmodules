@@ -1,3 +1,6 @@
 [submodule "AnyKernel3"]
 	path = AnyKernel3
-	url = https://github.com/Exynos9611Development/kernel_AnyKernel3
+	url = https://github.com/mcagabe19-kernel-stuff/kernel_packaging_anykernel3_universal9611
+[submodule "KernelSU"]
+	path = KernelSU
+	url = https://github.com/mcagabe19-kernel-stuff/KernelSU

@@ -5,11 +5,12 @@ A customized kernel designed to optimize performance and features for Exynos 961
 ## Features
 - Removal of Samsung-specific security and debugging features.
 - Based on Tab S6 Lite kernel source
-- Compiled with Neutron Clang 18 and LLVM binutils.
+- Compiled with Neutron Clang 19 and LLVM binutils.
 - Includes Erofs, Incremental FS, BinderFS, and various backports.
 - Enhanced DeX touchpad support for compatible OneUI versions.
 - Strips away numerous Samsung-introduced debug codes/configurations.
 - Integrates the [WireGuard](https://www.wireguard.com/) in-kernel VPN.
+- Added [KernelSU](https://github.com/backslashxx/KernelSU) with SuSFS support.
 
 ## Compilation Guide
 
@@ -17,22 +18,26 @@ A customized kernel designed to optimize performance and features for Exynos 961
 
 ```bash
 # Install necessary packages.
-sudo apt install -y git make libssl-dev curl bc pkg-config m4 libtool automake autoconf python3-is-python3
+sudo apt install -y git make libssl-dev curl bc pkg-config m4 libtool automake autoconf python3-is-python3 libarchive-tools
 
 # Clone the repository.
-git clone https://github.com/Exynos9611Development/android_kernel_samsung_universal9611
+git clone https://github.com/mcagabe19-kernel-stuff/kernel_samsung_universal9611
 
 # Navigate to the repository.
-cd android_kernel_samsung_universal9611
+cd kernel_samsung_universal9611
 
 # Set up the toolchain
 # Test various Clang/LLVM toolchains; Neutron Clang is preferred.
-# For Arch or newer glibc distributions, consider using Antman.
-bash <(curl -s https://gist.githubusercontent.com/cat658011/9462b1778231226b4fae0171a8cf1fd3/raw/setup-toolchain.sh)
+mkdir toolchain
+cd toolchain
+bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") -S=10032024
+bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") --patch=glibc
 
 # Start kernel build
 # Additional flags:
-# --oneui - Build for OneUI (Default AOSP variant).
+# --oneui - Build for OneUI.
+# --aosp - Build for AOSP (Default variant).
+# --no-ksu - Build kernel without KernelSU.
 # --allow-dirty - Build kernel without wiping out/ directory.
 # --permissive - Build kernel with permissive SELinux policy.
 python3 build_kernel.py --target=(select here your device, it can be a a51, f41, m31s, gta4xl, gta4xlwifi, m21) (Additional flags)
@@ -54,4 +59,3 @@ Flash the kernel using custom recovery or via adb sideload.
 - [Samsung Open Source](https://opensource.samsung.com/)
 - [Android Open Source Project](https://source.android.com/)
 - [The Linux Kernel](https://www.kernel.org/)
-

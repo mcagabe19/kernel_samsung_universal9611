@@ -1,0 +1,56 @@
+name: Build Kernel
+
+on:
+  push:
+    branches:
+      - SomethingNew-15
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        type: ['aosp', 'oneui']
+        device: ['a51', 'f41', 'm31s', 'm31', 'm21', 'gta4xl', 'gta4xlwifi']
+    name: "Build For ${{ matrix.device }} (${{ matrix.type }})"
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 1
+          submodules: true
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install libarchive-tools
+          
+      - name: Setup Clang Toolchain
+        run: |
+          mkdir toolchain
+          cd toolchain
+          bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") -S=10032024
+          bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman") --patch=glibc
+
+      - name: Build Kernel
+        run: python build_kernel.py --${{ matrix.type }} --target=${{ matrix.device }}
+
+      - name: Upload Kernel
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SN_develop_${{ matrix.device }}_${{ matrix.type }}
+          path: "SN_*.zip"
+          if-no-files-found: error
+
+      - name: Upload Logs
+        if: always() && github.event_name != 'workflow_call'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SN_develop_${{ matrix.device }}_${{ matrix.type }}-log
+          path: "*std*.log"
+          retention-days: 1
+          if-no-files-found: error 

@@ -9,12 +9,22 @@ import zipfile
 class CommandError(Exception):
     pass
 
-def run_command(command):
+def run_command(command, stdout_log_file=None, stderr_log_file=None):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
+    stdout = stdout.decode("utf-8")
+    stderr = stderr.decode("utf-8")
+    if stdout_log_file:
+        with open(stdout_log_file, "w") as f:
+            f.write(stdout)
+    if stderr_log_file:
+        with open(stderr_log_file, "w") as f:
+            f.write(stderr)
+    if stdout_log_file or stderr_log_file:
+        print(f"Output log files: {stdout_log_file}, {stderr_log_file}")
     if process.returncode != 0:
         raise CommandError(f"Command failed: {command}. Exit code: {process.returncode}")
-    return stdout.decode("utf-8"), stderr.decode("utf-8")
+    return stdout, stderr
 
 def file_exists(filepath):
     if not os.path.exists(filepath):
@@ -61,8 +71,14 @@ def main():
     parser.add_argument('--target', type=str, required=True, help="Target device (a51/m21/...)")
     parser.add_argument('--allow-dirty', action='store_true', help="Allow dirty build")
     parser.add_argument('--oneui', action='store_true', help="OneUI build")
+    parser.add_argument('--aosp', action='store_true', help="AOSP build (Default)")
+    parser.add_argument('--no-ksu', action='store_true', help="Don't include KernelSU support in kernel")
     parser.add_argument('--permissive', action='store_true', help="Use SELinux permissive mode")
     args = parser.parse_args()
+
+    if args.oneui and args.aosp:
+        print("Both OneUI and AOSP flags cannot be defined at the same time.")
+        return
     
     valid_targets = ['a51', 'f41', 'm31s', 'm31', 'm21', 'gta4xl', 'gta4xlwifi']
     if args.target not in valid_targets:
@@ -94,8 +110,9 @@ def main():
         'Build Type': build_type,
         'SELinux': selinux_state,
         'Device': args.target,
-        'TARGET_USES_LLVM': True,
-        'TOOLCHAIN_VERSION': ClangCompiler.get_version(),
+        'With KernelSU': not args.no_ksu,
+        'Using LLVM': True,
+        'Toolchain Version': ClangCompiler.get_version(),
     })
     
     toolchain_path = os.path.join(os.getcwd(), 'toolchain', 'bin')
@@ -114,12 +131,14 @@ def main():
         make_defconfig += ['oneui.config']
     if args.permissive:
         make_defconfig += ['permissive.config']
+    if args.no_ksu:
+        make_defconfig += ['no-ksu.config']
 
     start_time = datetime.now()
     print('Running make defconfig...')
-    run_command(make_defconfig)
+    run_command(make_defconfig, stdout_log_file="make_defconfig_stdout.log", stderr_log_file="make_defconfig_stderr.log")
     print('Building the kernel...')
-    run_command(make_common)
+    run_command(make_common, stdout_log_file="make_common_stdout.log", stderr_log_file="make_common_stderr.log")
     print('Build complete')
     elapsed_time = datetime.now() - start_time
     
@@ -155,4 +174,3 @@ def main():
     
 if __name__ == '__main__':
     main()
-

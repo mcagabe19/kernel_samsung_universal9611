@@ -1,0 +1,37 @@
+name: Release
+on: workflow_dispatch
+
+permissions:
+  contents: write
+  discussions: write
+
+jobs:
+  build-kernel:
+    uses: ./.github/workflows/build-kernel.yml
+
+  releaser:
+    needs: [build-kernel]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /home/runner
+          pattern: SN_*
+          merge-multiple: true
+
+      - name: Download KernelSU Next Manager
+        run: |
+          cd /home/runner
+          wget https://nightly.link/backslashxx/KernelSU/workflows/build-manager/magic/manager.zip
+          unzip manager.zip
+          rm manager.zip
+   
+      - name: Draft the release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Actions Build"
+          draft: true
+          files: |
+            /home/runner/KernelSU*.apk
+            /home/runner/SN_*.zip
