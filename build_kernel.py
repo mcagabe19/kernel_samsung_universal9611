@@ -133,7 +133,7 @@ def main():
         make_defconfig += ['permissive.config']
     if args.no_ksu:
         make_defconfig += ['no-ksu.config']
-    else
+    else:
         make_defconfig += ['ksu.config']
 
     start_time = datetime.now()
